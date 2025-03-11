@@ -1,0 +1,63 @@
+#include<stdio.h>
+#include<stdlib.h>
+#define n 4
+
+int at[n];    // Arrival Times
+int bt[n];    // Burst Times
+int pno[n];   // Process Numbers (1, 2, 3, ...)
+int ct[n];    // Completion Times
+int tat[n];   // Turnaround Times
+int wt[n];    // Waiting Times
+float wtavg, tatavg;
+
+void main() {
+    // Initialize averages
+    wtavg = 0.0;
+    tatavg = 0.0;
+
+    // Input arrival times
+    for(int i = 0; i < n; i++) {
+        printf("Enter Arrival Time for Process %d: ", i+1);
+        scanf("%d", &at[i]);
+    }
+
+    // Input burst times
+    for(int i = 0; i < n; i++) {
+        printf("Enter Burst Time for Process %d: ", i+1);
+        scanf("%d", &bt[i]);
+    }
+
+    // Completion Time calculation
+    ct[0] = at[0] + bt[0];  // First process completion time is its arrival time + burst time
+    for(int i = 1; i < n; i++) {
+        // If the process arrives after the previous one completes
+        if(ct[i-1] >= at[i]) {
+            ct[i] = ct[i-1] + bt[i];
+        } else {
+            // If the process arrives after the previous process, it will start at its own arrival time
+            ct[i] = at[i] + bt[i];
+        }
+    }
+
+    // Turnaround Time (TAT) = Completion Time - Arrival Time
+    for(int i = 0; i < n; i++) {
+        tat[i] = ct[i] - at[i];
+        wt[i] = tat[i] - bt[i];
+        tatavg += tat[i];
+        wtavg += wt[i];
+    }
+
+
+    tatavg = tatavg / n;
+    wtavg = wtavg / n;
+
+    // Output results
+    printf("\nProcess\tAT\tBT\tCT\tTAT\tWT\n");
+    for(int i = 0; i < n; i++) {
+        printf("%d\t%d\t%d\t%d\t%d\t%d\n", i+1, at[i], bt[i], ct[i], tat[i], wt[i]);
+    }
+
+    // Output the averages
+    printf("\nAverage Turnaround Time (TAT): %.2f\n", tatavg);
+    printf("Average Waiting Time (WT): %.2f\n", wtavg);
+}
