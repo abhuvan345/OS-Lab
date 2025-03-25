@@ -1,0 +1,120 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+typedef struct {
+    char id[3];
+    int arrival_time;
+    int execution_time;
+    int remaining_time;
+    int deadline;
+} Task;
+
+typedef struct {
+    Task* tasks;
+    int size;
+    int capacity;
+} TaskQueue;
+
+TaskQueue* createQueue(int capacity) {
+    TaskQueue* queue = (TaskQueue*)malloc(sizeof(TaskQueue));
+    queue->capacity = capacity;
+    queue->size = 0;
+    queue->tasks = (Task*)malloc(capacity * sizeof(Task));
+    return queue;
+}
+
+void enqueue(TaskQueue* queue, Task task) {
+    if (queue->size == queue->capacity) {
+        queue->capacity *= 2;
+        queue->tasks = (Task*)realloc(queue->tasks, queue->capacity * sizeof(Task));
+    }
+    queue->tasks[queue->size++] = task;
+}
+
+Task dequeue(TaskQueue* queue) {
+    if (queue->size == 0) {
+        Task emptyTask = {"", -1, -1, -1, -1};
+        return emptyTask;
+    }
+    Task task = queue->tasks[0];
+    for (int i = 0; i < queue->size - 1; i++) {
+        queue->tasks[i] = queue->tasks[i + 1];
+    }
+    queue->size--;
+    return task;
+}
+
+int compareDeadlines(const void* a, const void* b) {
+    Task* taskA = (Task*)a;
+    Task* taskB = (Task*)b;
+    return taskA->deadline - taskB->deadline;
+}
+
+void sortQueue(TaskQueue* queue) {
+    qsort(queue->tasks, queue->size, sizeof(Task), compareDeadlines);
+}
+
+void EDF_Scheduling(Task tasks[], int taskCount, int preemptive) {
+    TaskQueue* readyQueue = createQueue(taskCount);
+    int currentTime = 0;
+    Task* runningTask = NULL;
+    int remainingTasks = taskCount;
+
+    while (remainingTasks > 0 || readyQueue->size > 0 || runningTask != NULL) {
+        // Add arrived tasks to ready queue
+        for (int i = 0; i < taskCount; i++) {
+            if (tasks[i].arrival_time == currentTime && tasks[i].remaining_time !=0) {
+                enqueue(readyQueue, tasks[i]);
+                tasks[i].remaining_time = tasks[i].execution_time;
+            }
+        }
+
+        if (runningTask != NULL && preemptive) {
+            // Check for preemption
+            if (readyQueue->size > 0) {
+                sortQueue(readyQueue);
+
+                if (readyQueue->tasks[0].deadline < runningTask->deadline) {
+                    printf("%d: Preempted %s\n", currentTime, runningTask->id);
+                    enqueue(readyQueue, *runningTask);
+                    runningTask = NULL;
+                }
+            }
+        }
+
+        if (runningTask == NULL && readyQueue->size > 0) {
+            sortQueue(readyQueue);
+            runningTask = (Task*)malloc(sizeof(Task));
+            *runningTask = dequeue(readyQueue);
+            printf("%d: Started %s\n", currentTime, runningTask->id);
+        }
+
+        if (runningTask != NULL) {
+            runningTask->remaining_time--;
+            if (runningTask->remaining_time == 0) {
+                printf("%d: Finished %s\n", currentTime + 1, runningTask->id);
+                remainingTasks--;
+                free(runningTask);
+                runningTask = NULL;
+            }
+        }
+
+        currentTime++;
+    }
+
+    free(readyQueue->tasks);
+    free(readyQueue);
+}
+
+int main() {
+    Task tasks[] = {
+        {"T1", 0, 3, 0, 5},
+        {"T2", 1, 2, 0, 4},
+        {"T3", 2, 2, 0, 6}
+    };
+    int taskCount = sizeof(tasks) / sizeof(tasks[0]);
+
+    EDF_Scheduling(tasks, taskCount, 1); // 1 for preemptive, 0 for non-preemptive
+
+    return 0;
+}
