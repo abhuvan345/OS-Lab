@@ -1,0 +1,111 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+typedef struct {
+    int task_id;
+    int period;
+    int execution_time;
+    int remaining_time;
+    int priority; // Priority based on period
+} Task;
+
+int compare_priority(const void *a, const void *b) {
+    Task *taskA = (Task *)a;
+    Task *taskB = (Task *)b;
+    return taskA->period - taskB->period; // Sort by period (shorter period -> higher priority)
+}
+
+void assign_priority(Task *tasks, int n) {
+    // Assign priority based on the period (shorter period -> higher priority)
+    for (int i = 0; i < n; i++) {
+        tasks[i].priority = tasks[i].period;
+    }
+}
+
+void execute(Task *task) {
+    printf("Executing Task %d\n", task->task_id);
+    task->remaining_time--;
+}
+
+int higher_priority_task_arrives(Task *tasks, int n) {
+    // Check if there is any higher priority task ready
+    for (int i = 0; i < n; i++) {
+        if (tasks[i].remaining_time > 0 && tasks[i].priority < tasks[0].priority) {
+            return 1; // A higher priority task arrived
+        }
+    }
+    return 0;
+}
+
+void RMS_Scheduling(Task *tasks, int n) {
+    int time = 0;
+
+    while (1) {
+        // Sort tasks by priority
+        qsort(tasks, n, sizeof(Task), compare_priority);
+
+        // Get the ready tasks (those that are not finished yet)
+        int all_done = 1;
+        for (int i = 0; i < n; i++) {
+            if (tasks[i].remaining_time > 0) {
+                all_done = 0;
+                break;
+            }
+        }
+
+        if (all_done) {
+            printf("All tasks completed.\n");
+            break;
+        }
+
+        // Execute the highest-priority task (first in the sorted array)
+        for (int i = 0; i < n; i++) {
+            if (tasks[i].remaining_time > 0) {
+                // Execute task
+                execute(&tasks[i]);
+
+                // Check if a higher-priority task arrives
+                if (higher_priority_task_arrives(tasks, n)) {
+                    // Preempt current task and stop execution here
+                    printf("Preempting Task %d due to higher priority task arrival.\n", tasks[i].task_id);
+                    break;
+                }
+                // If this task finished, move on to the next task
+                if (tasks[i].remaining_time == 0) {
+                    printf("Task %d completed at time %d\n", tasks[i].task_id, time);
+                }
+            }
+        }
+        time++;
+    }
+}
+
+int main() {
+    int n;
+
+    // Ask the user for the number of tasks
+    printf("Enter the number of tasks: ");
+    scanf("%d", &n);
+
+    // Create an array of tasks
+    Task tasks[n];
+
+    // Ask the user for the details of each task
+    for (int i = 0; i < n; i++) {
+        printf("Enter details for Task %d:\n", i + 1);
+        tasks[i].task_id = i + 1;  // Assign task_id starting from 1
+        printf("Enter the period for Task %d: ", i + 1);
+        scanf("%d", &tasks[i].period);
+        printf("Enter the execution time for Task %d: ", i + 1);
+        scanf("%d", &tasks[i].execution_time);
+        tasks[i].remaining_time = tasks[i].execution_time;  // Initially, the remaining time is the execution time
+    }
+
+    // Assign priorities based on periods (shorter period -> higher priority)
+    assign_priority(tasks, n);
+
+    // Start the RMS scheduling
+    RMS_Scheduling(tasks, n);
+
+    return 0;
+}
