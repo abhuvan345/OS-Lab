@@ -1,0 +1,92 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX_BLOCKS 100
+
+typedef struct {
+    char filename[20];
+    int startBlock;
+    int length;
+} File;
+
+int memory[MAX_BLOCKS]; // 0 - free, 1 - allocated
+File files[10];
+int fileCount = 0;
+
+void allocateSequentialFile() {
+    char filename[20];
+    int length, startBlock;
+    printf("\nEnter file name: ");
+    scanf("%s", filename);
+    printf("Enter number of blocks required: ");
+    scanf("%d", &length);
+
+    // Search for a block of 'length' contiguous free blocks
+    int found = 0;
+    for (startBlock = 0; startBlock <= MAX_BLOCKS - length; startBlock++) {
+        int j;
+        for (j = 0; j < length; j++) {
+            if (memory[startBlock + j] == 1) break;
+        }
+
+        if (j == length) {
+            found = 1;
+            break;
+        }
+    }
+
+    if (found) {
+        for (int i = startBlock; i < startBlock + length; i++) {
+            memory[i] = 1;
+        }
+
+        strcpy(files[fileCount].filename, filename);
+        files[fileCount].startBlock = startBlock;
+        files[fileCount].length = length;
+        fileCount++;
+
+        printf("File allocated successfully from block %d to %d.\n", startBlock, startBlock + length - 1);
+    } else {
+        printf("No sufficient contiguous blocks available. Allocation failed.\n");
+    }
+}
+
+void displayFiles() {
+    printf("\nAllocated Files:\n");
+    printf("Filename\tStart\tLength\tBlocks\n");
+    for (int i = 0; i < fileCount; i++) {
+        printf("%s\t\t%d\t%d\t", files[i].filename, files[i].startBlock, files[i].length);
+        for (int j = 0; j < files[i].length; j++) {
+            printf("%d ", files[i].startBlock + j);
+        }
+        printf("\n");
+    }
+}
+
+int main() {
+    int choice;
+    while (1) {
+        printf("\nSequential File Allocation Menu:\n");
+        printf("1. Allocate File\n");
+        printf("2. Display Allocated Files\n");
+        printf("3. Exit\n");
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+
+        switch (choice) {
+            case 1:
+                allocateSequentialFile();
+                break;
+            case 2:
+                displayFiles();
+                break;
+            case 3:
+                exit(0);
+            default:
+                printf("Invalid choice!\n");
+        }
+    }
+
+    return 0;
+}
